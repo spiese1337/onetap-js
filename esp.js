@@ -62,6 +62,7 @@ var paths = {
 }
 
 var menu = {
+    off_esp: UI.AddCheckbox( paths.custom, 'Turn off cheat\'s esp' ),
     switch: UI.AddCheckbox( paths.custom, 'Enable ' + s_name ),
     box: UI.AddCheckbox( paths.custom, 'Box' ),
     box_color: UI.AddColorPicker( paths.custom, 'Box color' ),
@@ -71,7 +72,7 @@ var menu = {
     health_bar_color: UI.AddColorPicker( paths.custom, 'Custom color' ),
     weapon: UI.AddCheckbox( paths.custom, 'Weapon' ),
     weapon_color: UI.AddColorPicker( paths.custom, 'Weapon color' ),
-    flags: UI.AddMultiDropdown( paths.custom, 'Flags', [ 'Bomb', 'Kevlar', 'Target hitchance', 'Scoped', 'Fake latency warning', 'Lethal' ] ),
+    flags: UI.AddMultiDropdown( paths.custom, 'Flags', [ 'Bomb', 'Kevlar', 'Target hitchance', 'Scoped', 'Fake latency warning', 'Lethal', 'Money' ] ),
 }
 // @endregion
 
@@ -87,7 +88,16 @@ rage_bot.handle = function( ){
 }
 
 function handle_esp( ) {
+    // @note: turns off cheat's ESP
+    if ( UI.GetValue( menu.off_esp ) ) {
+        UI.SetValue( ['Visuals', 'ESP', 'Enemy', 'Box'], 0 )
+        UI.SetValue( ['Visuals', 'ESP', 'Enemy', 'Flags'], 0 )
+        UI.SetValue( ['Visuals', 'ESP', 'Enemy', 'Ammo'], 0 )
+        UI.SetValue( ['Visuals', 'ESP', 'Enemy', 'Weapon'], 0 )
+    }
+    
     if ( !UI.GetValue(menu.switch) ) return
+
     const fonts = {
         block: Render.GetFont( 'esp\\pixel_m.ttf', 16, false ),
         verdana: Render.GetFont( 'esp\\verdanab.ttf', 10, false ),
@@ -145,7 +155,7 @@ function handle_esp( ) {
                 var names = ['Visuals', 'ESP', 'Enemy', 'Name']
                 UI.SetColor( names, colors.name )
                 if ( UI.GetValue(menu.name) == 1 ) {
-                    helpers.shadow_string( position[1] + ( (position[3] - position[1]) / 2 ), position[2] - 14, 1, Entity.GetName( enemy ), is_dormant ? [ 255, 255, 255, 200 ] : colors.name, fonts.verdana,  [ 0, 0, 0, 145] ) 
+                    helpers.shadow_string( position[1] + ( (position[3] - position[1]) / 2 ), position[2] - 15, 1, Entity.GetName( enemy ), is_dormant ? [ 255, 255, 255, 200 ] : colors.name, fonts.verdana,  [ 0, 0, 0, 145] ) 
                     UI.SetValue( names, 0 )
                 } else {
                     UI.SetValue( names, 1 )
@@ -153,7 +163,6 @@ function handle_esp( ) {
                 // @endregion
 
                 // @region: box
-                UI.SetValue( ['Visuals', 'ESP', 'Enemy', 'Box'], 0 )
                 if ( UI.GetValue(menu.box) ) {
                     var box_pos = {
                         x: position[1],
@@ -169,7 +178,6 @@ function handle_esp( ) {
                 // @endregion
 
                 // @region: flags
-                UI.SetValue( ['Visuals', 'ESP', 'Enemy', 'Flags'], 0 )
                 var flags_add = 0;
                 var c4 = Entity.GetEntitiesByClassID(34)[0];
                 if ( c4 ) {
@@ -182,7 +190,15 @@ function handle_esp( ) {
                     armor: Entity.GetProp( enemy, 'CCSPlayerResource', 'm_iArmor' ),
                     scoped: Entity.GetProp( enemy, 'CCSPlayer', 'm_bIsScoped' ),
                     ping: Entity.GetProp( enemy, 'CCSPlayerResource', 'm_iPing' ),
+                    money: Entity.GetProp( enemy, 'CCSPlayer', 'm_iAccount' ),
                 }
+                if ( !is_dormant ) {
+                    if (flags_value & (1 << 6)) {            
+                        flag( position[3] + 5, position[2] - 3 + flags_add, '$' + vars.money, [ 173, 255, 47, 255], is_dormant )
+                        flags_add += 10
+                    }
+                }
+
                 if (flags_value & (1 << 0)) {
                     if ( c4_ == enemy ) {
                         flag( position[3] + 5, position[2] - 3 + flags_add, 'C4', [255, 0, 0, 255], is_dormant )
@@ -223,7 +239,7 @@ function handle_esp( ) {
                     }
 
                     if (flags_value & (1 << 5)) {
-                        if ( ( health < 93 ) ) {
+                        if ( health < 93 ) {
                             flag( position[3] + 5, position[2] - 3 + flags_add, 'LETHAL', [ 173, 255, 47, 255], is_dormant )
                             flags_add += 10
                         }
@@ -232,8 +248,6 @@ function handle_esp( ) {
                 // @endregion
 
                 // @region: weapons
-                UI.SetValue( ['Visuals', 'ESP', 'Enemy', 'Ammo'], 0 )
-                UI.SetValue( ['Visuals', 'ESP', 'Enemy', 'Weapon'], 0 )
                 var active_weapon = Entity.GetName( Entity.GetWeapon( enemy ) )
                 if ( UI.GetValue(menu.weapon) ) {
                     helpers.outline_string( position[1] + ( (position[3] - position[1]) / 2 ), position[4] - 1, 1, active_weapon, is_dormant ? [ 255, 255, 255, 200 ] : colors.weapon, fonts.block,  [ 0, 0, 0, 255] ) 
