@@ -1,0 +1,48 @@
+print = function() {
+    var text = ''
+    for (var i = 0; i < arguments.length; i++) {
+        text += arguments[i] + ' '
+    }
+    Cheat.PrintLog( text, [ 255, 255, 255, 255 ] )
+}
+
+var helpers = {}
+
+helpers.lerp = function( a, b, percentage ) {
+    return a + ( b - a ) * percentage
+}
+
+helpers.clamp = function( value, min, max ) {
+    return Math.min( max, Math.max( min, value ) )
+}
+
+helpers.color_swap = function( color1, color2, weight ) {
+    var weight = helpers.clamp( weight, 0, 1 )
+
+    return [
+        helpers.lerp( color1[0], color2[0], weight ), 
+        helpers.lerp( color1[1], color2[1], weight ), 
+        helpers.lerp( color1[2], color2[2], weight ), 
+        helpers.lerp( color1[3], color2[3], weight )
+    ]
+}
+
+var menu = {
+    switch: UI.AddCheckbox( ['Visuals', 'Chams', 'Enemy'], 'Double color history chams'),
+    color1: UI.AddColorPicker( ['Visuals', 'Chams', 'Enemy'], 'First color' ),
+    color2: UI.AddColorPicker( ['Visuals', 'Chams', 'Enemy'], 'Second color' ),
+}
+
+function handle_esp( ) {
+    var path = [ 'Visuals', 'Chams', 'Enemy', 'Configured model' ]
+    var visible = UI.GetValue( path ) == 3 ? 1 : 0
+    UI.SetEnabled( menu.switch, visible )
+    UI.SetEnabled( menu.color1, visible )
+    UI.SetEnabled( menu.color2, visible )
+
+    if ( !UI.GetValue( menu.switch ) ) return
+	  var alpha = Math.sin(Math.abs(-Math.PI + (Globals.Curtime() * (1 / 0.7)) % (Math.PI * 2)))
+    UI.SetColor(['Visuals', 'Chams', 'Enemy', 'History material color'], helpers.color_swap( UI.GetColor( menu.color1 ), UI.GetColor( menu.color2 ), alpha ) )
+}
+
+Cheat.RegisterCallback( 'Draw', 'handle_esp' );
