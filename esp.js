@@ -1,7 +1,8 @@
 // @note: vars
-var helpers = {}
+const helpers = {}
 var health_bar = {}
 var s_name = 'Custom ESP'
+const screen_size = Render.GetScreenSize()
 
 res_health = 100
 rage_bot = {
@@ -72,7 +73,7 @@ var menu = {
     health_bar_color: UI.AddColorPicker( paths.custom, 'Custom color' ),
     weapon: UI.AddCheckbox( paths.custom, 'Weapon' ),
     weapon_color: UI.AddColorPicker( paths.custom, 'Weapon color' ),
-    flags: UI.AddMultiDropdown( paths.custom, 'Flags', [ 'Bomb', 'Kevlar', 'Target hitchance', 'Scoped', 'Fake latency warning', 'Lethal', 'Money' ] ),
+    flags: UI.AddMultiDropdown( paths.custom, 'Flags', [ 'Bomb', 'Kevlar', 'Target hitchance', 'Scoped', 'Fake latency warning', 'Lethal', 'Money', 'Fake' ] ),
 }
 // @endregion
 
@@ -137,6 +138,7 @@ function handle_esp( ) {
                     width: 4,
                     height: position[4] - position[2] + 3,
                 }
+                
                 var health_val = {
                     height: Math.floor( ( bar_pos.height - 1 ) * ( health/100 ) ),
                     color: ( UI.GetValue(menu.health_bar) & ( 1 << 1 ) ) ? colors.health_bar : helpers.color_swap( [ 254, 50, 81, 255 ], [ 120, 225, 80, 255 ], health/100 ),
@@ -186,7 +188,7 @@ function handle_esp( ) {
                 var flags_value = UI.GetValue(menu.flags)
                 
                 const vars = {
-                    has_helmet: Entity.GetProp( enemy, 'CCSPlayerResource', 'm_bHasHelmet' ),
+                    has_helmet: Entity.GetProp( enemy, 'CCSPlayer', 'm_bHasHelmet' ),
                     armor: Entity.GetProp( enemy, 'CCSPlayerResource', 'm_iArmor' ),
                     scoped: Entity.GetProp( enemy, 'CCSPlayer', 'm_bIsScoped' ),
                     ping: Entity.GetProp( enemy, 'CCSPlayerResource', 'm_iPing' ),
@@ -194,7 +196,17 @@ function handle_esp( ) {
                 }
                 if ( !is_dormant ) {
                     if (flags_value & (1 << 6)) {            
-                        flag( position[3] + 5, position[2] - 3 + flags_add, '$' + vars.money, [ 173, 255, 47, 255], is_dormant )
+                        flag( position[3] + 5, position[2] - 3 + flags_add, '$' + vars.money, [ 107, 163, 20, 255], is_dormant )
+                        flags_add += 10
+                    }
+                }
+                
+                if (flags_value & (1 << 1)) {
+                    if ( vars.has_helmet ) {
+                        flag( position[3] + 5, position[2] - 3 + flags_add, 'HK', [255, 255, 255, 255], is_dormant )
+                        flags_add += 10
+                    } else if ( vars.armor != 0 ) {
+                        flag( position[3] + 5, position[2] - 3 + flags_add, 'K', [255, 255, 255, 255], is_dormant )
                         flags_add += 10
                     }
                 }
@@ -206,31 +218,22 @@ function handle_esp( ) {
                     } 
                 }
 
-                if (flags_value & (1 << 1)) {
-                    if ( vars.has_helmet ) {
-                        flag( position[3] + 5, position[2] - 3 + flags_add, 'HK', [255, 255, 255, 255], is_dormant )
-                        flags_add += 10
-                    } else if ( helpers.armor != 0 ) {
-                        flag( position[3] + 5, position[2] - 3 + flags_add, 'K', [255, 255, 255, 255], is_dormant )
+                if (flags_value & (1 << 3)) {
+                    if ( vars.scoped ) {
+                        flag( position[3] + 5, position[2] - 3 + flags_add, 'ZOOM', [0, 160, 255, 255], is_dormant )
                         flags_add += 10
                     }
                 }
+
+                if (flags_value & (1 << 7)) {
+                    if ( !Entity.IsBot( enemy ) ) {
+                        flag( position[3] + 5, position[2] - 3 + flags_add, 'FAKE', [255, 255, 255, 255], is_dormant )
+                        flags_add += 10
+                    }
+                }
+
                 // @note: flags that won't render on dormant enemy 
                 if ( !is_dormant ) {
-                    if (flags_value & (1 << 2)) {
-                        if ( enemy == rage_bot.target ) {
-                            flag( position[3] + 5, position[2] - 3 + flags_add, rage_bot.hitchance, [255, 255, 255, 255], is_dormant )
-                            flags_add += 10
-                        }
-                    }
-
-                    if (flags_value & (1 << 3)) {
-                        if ( vars.scoped ) {
-                            flag( position[3] + 5, position[2] - 3 + flags_add, 'ZOOM', [0, 160, 255, 255], is_dormant )
-                            flags_add += 10
-                        }
-                    }
-
                     if (flags_value & (1 << 4)) {
                         if ( ( vars.ping > 75 ) ) {
                             flag( position[3] + 5, position[2] - 3 + flags_add, 'PING', [ 255, 150, 150, 255], is_dormant )
@@ -240,9 +243,16 @@ function handle_esp( ) {
 
                     if (flags_value & (1 << 5)) {
                         if ( health < 93 ) {
-                            flag( position[3] + 5, position[2] - 3 + flags_add, 'LETHAL', [ 173, 255, 47, 255], is_dormant )
+                            flag( position[3] + 5, position[2] - 3 + flags_add, 'LETHAL', [ 120, 225, 80, 255], is_dormant )
                             flags_add += 10
                         }
+                    }
+                }
+                
+                if (flags_value & (1 << 2)) {
+                    if ( enemy == rage_bot.target ) {
+                        flag( position[3] + 5, position[2] - 3 + flags_add, rage_bot.hitchance, [255, 255, 255, 255], is_dormant )
+                        flags_add += 10
                     }
                 }
                 // @endregion
@@ -250,7 +260,7 @@ function handle_esp( ) {
                 // @region: weapons
                 var active_weapon = Entity.GetName( Entity.GetWeapon( enemy ) )
                 if ( UI.GetValue(menu.weapon) ) {
-                    helpers.outline_string( position[1] + ( (position[3] - position[1]) / 2 ), position[4] - 1, 1, active_weapon, is_dormant ? [ 255, 255, 255, 200 ] : colors.weapon, fonts.block,  [ 0, 0, 0, 255] ) 
+                    helpers.outline_string( position[1] + ( (position[3] - position[1]) / 2 ), position[4] - 1, 1, active_weapon.replace(' ', ''), is_dormant ? [ 255, 255, 255, 200 ] : colors.weapon, fonts.block,  is_dormant ? [ 0, 0, 0, 145 ] : [ 0, 0, 0, 255 ] ) 
                 }
                 // @endregion
             }
